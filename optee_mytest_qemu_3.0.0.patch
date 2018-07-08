@@ -1,0 +1,30 @@
+diff --git a/qemu.mk b/qemu.mk
+index b0775bb..fdbe90c 100644
+--- a/qemu.mk
++++ b/qemu.mk
+@@ -28,9 +28,10 @@ ifeq ($(CFG_TEE_BENCHMARK),y)
+ all: benchmark-app
+ clean: benchmark-app-clean
+ endif
+-all: bios-qemu qemu soc-term optee-examples
++all: bios-qemu qemu soc-term optee-examples optee_my_test
+ clean: bios-qemu-clean busybox-clean linux-clean optee-os-clean \
+ 	optee-client-clean qemu-clean soc-term-clean check-clean \
++	optee_my_test-clean \
+ 	optee-examples-clean
+ 
+ include toolchain.mk
+@@ -141,6 +142,13 @@ optee-examples: optee-examples-common
+ optee-examples-clean: optee-examples-clean-common
+ 
+ ################################################################################
++# optee_my_test
++################################################################################
++optee_my_test: optee_my_test-common
++
++optee_my_test-clean: optee_my_test-clean-common
++
++################################################################################
+ # benchmark
+ ################################################################################
+ benchmark-app: benchmark-app-common

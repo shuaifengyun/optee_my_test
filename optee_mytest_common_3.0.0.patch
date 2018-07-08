@@ -1,0 +1,70 @@
+diff --git a/common.mk b/common.mk
+index 690499e..be0fc5f 100644
+--- a/common.mk
++++ b/common.mk
+@@ -19,6 +19,7 @@ OPTEE_TEST_OUT_PATH		?= $(ROOT)/optee_test/out
+ OPTEE_EXAMPLES_PATH		?= $(ROOT)/optee_examples
+ BENCHMARK_APP_PATH		?= $(ROOT)/optee_benchmark
+ LIBYAML_LIB_PATH		?= $(BENCHMARK_APP_PATH)/libyaml/out/lib
++OPTEE_MYTEST_PATH		?= $(ROOT)/optee_my_test
+ 
+ # default high verbosity. slow uarts shall specify lower if prefered
+ CFG_TEE_CORE_LOG_LEVEL		?= 3
+@@ -305,7 +306,7 @@ OPTEE_OS_CLEAN_COMMON_FLAGS ?= $(OPTEE_OS_COMMON_EXTRA_FLAGS)
+ ifeq ($(CFG_TEE_BENCHMARK),y)
+ optee-os-clean-common: benchmark-app-clean-common
+ endif
+-optee-os-clean-common: xtest-clean optee-examples-clean
++optee-os-clean-common: xtest-clean optee-examples-clean optee_my_test-clean
+ 	$(MAKE) -C $(OPTEE_OS_PATH) $(OPTEE_OS_CLEAN_COMMON_FLAGS) clean
+ 
+ OPTEE_CLIENT_COMMON_FLAGS ?= CROSS_COMPILE=$(CROSS_COMPILE_NS_USER) \
+@@ -370,6 +371,24 @@ optee-examples-clean-common:
+ 			$(OPTEE_EXAMPLES_CLEAN_COMMON_FLAGS) clean
+ 
+ ################################################################################
++# optee_my_test
++################################################################################
++OPTEE_MYTEST_COMMON_FLAGS ?= HOST_CROSS_COMPILE=$(CROSS_COMPILE_NS_USER)\
++	TA_CROSS_COMPILE=$(CROSS_COMPILE_S_USER) \
++	TA_DEV_KIT_DIR=$(OPTEE_OS_TA_DEV_KIT_DIR) \
++	TEEC_EXPORT=$(OPTEE_CLIENT_EXPORT)
++
++.PHONY: optee_my_test-common
++optee_my_test-common: optee-os optee-client
++	$(MAKE) -C $(OPTEE_MYTEST_PATH) $(OPTEE_MYTEST_COMMON_FLAGS)
++
++OPTEE_MYTEST_CLEAN_COMMON_FLAGS ?= TA_DEV_KIT_DIR=$(OPTEE_OS_TA_DEV_KIT_DIR)
++
++.PHONY: optee_my_test-clean-common
++optee_my_test-clean-common:
++	$(MAKE) -C $(OPTEE_MYTEST_PATH) $(OPTEE_MYTEST_CLEAN_COMMON_FLAGS) clean
++
++################################################################################
+ # benchmark_app
+ ################################################################################
+ BENCHMARK_APP_COMMON_FLAGS ?= CROSS_COMPILE=$(CROSS_COMPILE_NS_USER) \
+@@ -408,7 +427,7 @@ ifeq ($(CFG_TEE_BENCHMARK),y)
+ filelist-tee-common: benchmark-app
+ endif
+ filelist-tee-common: fl:=$(GEN_ROOTFS_FILELIST)
+-filelist-tee-common: optee-client xtest optee-examples
++filelist-tee-common: optee-client xtest optee-examples optee_my_test
+ 	@echo "# filelist-tee-common /start" 				> $(fl)
+ 	@echo "dir /lib/optee_armtz 755 0 0" 				>> $(fl)
+ 	@if [ -e $(OPTEE_EXAMPLES_PATH)/out/ca ]; then \
+@@ -423,6 +442,14 @@ filelist-tee-common: optee-client xtest optee-examples
+ 			"$$file 755 0 0"				>> $(fl); \
+ 		done; \
+ 	fi
++	@echo "#optee_mytest " >> $(fl)
++	@if [ -e $(OPTEE_MYTEST_PATH)/host/my_test ]; then \
++		echo "file /bin/my_test" \
++			"$(OPTEE_MYTEST_PATH)/host/my_test 755 0 0"	>> $(fl); \
++		echo "file /lib/optee_armtz/9269fadd-99d5-4afb-a1dc-ee3e9c61b04c.ta" \
++			"$(OPTEE_MYTEST_PATH)/ta/9269fadd-99d5-4afb-a1dc-ee3e9c61b04c.ta 444 0 0" \
++				>> $(fl); \
++	fi
+ 	@echo "# xtest / optee_test" 					>> $(fl)
+ 	@find $(OPTEE_TEST_OUT_PATH) -type f -name "xtest" | \
+ 		sed 's/\(.*\)/file \/bin\/xtest \1 755 0 0/g' 		>> $(fl)
